@@ -1,5 +1,5 @@
 # portfolio-serverpackethandlermanager-unity3d
-과거 프로젝트에서 ServerPacketHandler를 개선한 내용입니다.
+과거 프로젝트에서 ServerPacketHandler를 Chain of Responsibility 디자인 패턴을 이용해 개선한 내용에 대한 설명입니다.
 
 ## 기존
 - switch문에서 각 패킷Id에 대한 분기를 태우며 각 패킷ID을 처리하는 코드가 작성되어 있었음.
