@@ -107,40 +107,33 @@ Unity3d 프로젝트에서 ServerPacketHandler를 Chain of Responsibility 디자
 ``` c#
     private void SetHandlers()
     {
-        AddHandler("GamePlayProfile", GamePlayProfileHandler);
-        AddHandler("WeeklyRank", WeeklyRankHandler);
-        AddHandler("DailyBonus", DailyBonusHandler);
-        AddHandler("GameNotify", GameNotifyHandler);
-        AddHandler("Shop", ShopHandler);
+        AddHandler(ContentType.GamePlayProfile, GamePlayProfileHandler);
+        AddHandler(ContentType.WeeklyRank, WeeklyRankHandler);
+        AddHandler(ContentType.DailyBonus, DailyBonusHandler);
+        AddHandler(ContentType.GameNotify, GameNotifyHandler);
+        AddHandler(ContentType.Shop, ShopHandler);
     }
 
     private void RemoveHandlers()
     {
-        RemoveHandler("GamePlayProfile", GamePlayProfileHandler);
-        RemoveHandler("WeeklyRank", WeeklyRankHandler);
-        RemoveHandler("DailyBonus", DailyBonusHandler);
-        RemoveHandler("GameNotify", GameNotifyHandler);
-        RemoveHandler("Shop", ShopHandler);
+        RemoveHandler(ContentType.GamePlayProfile, GamePlayProfileHandler);
+        RemoveHandler(ContentType.WeeklyRank, WeeklyRankHandler);
+        RemoveHandler(ContentType.DailyBonus, DailyBonusHandler);
+        RemoveHandler(ContentType.GameNotify, GameNotifyHandler);
+        RemoveHandler(ContentType.Shop, ShopHandler);
     }
 ```
 - 패킷Id가 오면 그에 매칭되는 Handler함수에서 필요한 처리를 수행(Chain of Responsibility 디자인 패턴 적용)
 ``` c#
     public void HandlePacketContents(ServerPacketToC msg)
     {
-        locked = true;
         foreach (var info in msg.Infos)
         {
-            foreach (var h in packetHandlers)
+            if(packetHandlers.ContainsKey(info.contentType))
             {
-                if (h.id == info.Id)
-                {
-                    h.handler(info);
-                }
+                packetHandlers[info.contentType].handler(info);
             }
         }
-        locked = false;
-
-        CheckHandler();
     }
 ```
 - 각 패킷별로 처리할 내용을 개별 클래스로 분리하여 코드를 decoupling 시킴.
