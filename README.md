@@ -2,7 +2,7 @@
 Unity3d 프로젝트에서 ServerPacketHandler를 Chain of Responsibility 디자인 패턴을 이용해 개선한 내용에 대한 설명입니다.
 
 ## 기존
-- switch문에서 각 패킷Id에 대한 분기를 태우며 각 패킷ID을 처리하는 코드가 작성되어 있었음.
+- switch문에서 각 패킷Id에 대한 분기를 태우며 각 패킷Id을 처리하는 코드가 작성되어 있었음.
 - 라이브 서비스 기간이 늘어날 수록 계속하여 늘어나는 패킷에 의해 함수가 무제한으로 길어짐.
 - 코드가 한 곳에 몰려 있어 유지보수 및 디버깅이 어려움.
 ``` c#
@@ -107,20 +107,20 @@ Unity3d 프로젝트에서 ServerPacketHandler를 Chain of Responsibility 디자
 ``` c#
     private void SetHandlers()
     {
-        AddHandler(ContentType.GamePlayProfile, GamePlayProfileHandler);
-        AddHandler(ContentType.WeeklyRank, WeeklyRankHandler);
-        AddHandler(ContentType.DailyBonus, DailyBonusHandler);
-        AddHandler(ContentType.GameNotify, GameNotifyHandler);
-        AddHandler(ContentType.Shop, ShopHandler);
+        AddHandler(PacketId.GamePlayProfile, GamePlayProfileHandler);
+        AddHandler(PacketId.WeeklyRank, WeeklyRankHandler);
+        AddHandler(PacketId.DailyBonus, DailyBonusHandler);
+        AddHandler(PacketId.GameNotify, GameNotifyHandler);
+        AddHandler(PacketId.Shop, ShopHandler);
     }
 
     private void RemoveHandlers()
     {
-        RemoveHandler(ContentType.GamePlayProfile, GamePlayProfileHandler);
-        RemoveHandler(ContentType.WeeklyRank, WeeklyRankHandler);
-        RemoveHandler(ContentType.DailyBonus, DailyBonusHandler);
-        RemoveHandler(ContentType.GameNotify, GameNotifyHandler);
-        RemoveHandler(ContentType.Shop, ShopHandler);
+        RemoveHandler(PacketId.GamePlayProfile, GamePlayProfileHandler);
+        RemoveHandler(PacketId.WeeklyRank, WeeklyRankHandler);
+        RemoveHandler(PacketId.DailyBonus, DailyBonusHandler);
+        RemoveHandler(PacketId.GameNotify, GameNotifyHandler);
+        RemoveHandler(PacketId.Shop, ShopHandler);
     }
 ```
 - 패킷Id가 오면 그에 매칭되는 Handler함수에서 필요한 처리를 수행(Chain of Responsibility 디자인 패턴 적용)
@@ -129,9 +129,9 @@ Unity3d 프로젝트에서 ServerPacketHandler를 Chain of Responsibility 디자
     {
         foreach (var info in msg.Infos)
         {
-            if(packetHandlers.ContainsKey(info.contentType))
+            if(packetHandlers.ContainsKey(info.packetId))
             {
-                packetHandlers[info.contentType].handler(info);
+                packetHandlers[info.packetId].handler(info);
             }
         }
     }
