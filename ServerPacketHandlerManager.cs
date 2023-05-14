@@ -4,14 +4,22 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PacketContent
+public enum ContentType
 {
-    public string id;
+    None = 0,
+    GamePlayProfile,
+    WeeklyRank,
+    DailyBonus,
+    GameNotify,
+    Shop
+}
+
+public class PacketHandler
+{
     public Action<PacketInfo> handler;
 
-    public PacketContent(string packetId, Action<PacketInfo> handler)
+    public PacketHandler(Action<PacketInfo> handler)
     {
-        id = packetId;
         this.handler = handler;
     }
 }
@@ -23,132 +31,70 @@ public class PacketContent
 */
 public class ServerPacketHandlerManager : Singleton<ServerPacketHandlerManager>
 {
-    private List<PacketContent> packetHandlers;
-    private List<PacketContent> waitHandler;
-    private List<PacketContent> removeHandler;
-
-    private bool locked = false;
+    private Dictionary<ContentType, PacketHandler> packetHandlers;
 
     public ServerContentsManager()
     {
-        packetHandlers = new List<PacketContent>();
-        waitHandler = new List<PacketContent>();
-        removeHandler = new List<PacketContent>();
+        packetHandlers = new Dictionary<ContentType, PacketHandler>();
         SetHandlers();
     }
 
     ~ServerContentsManager()
     {
         RemoveHandlers();
-        waitHandler.Clear();
-        removeHandler.Clear();
-        packetHandlers.Clear();
     }
 
     private void SetHandlers()
     {
-        AddHandler("GamePlayProfile", GamePlayProfileHandler);
-        AddHandler("WeeklyRank", WeeklyRankHandler);
-        AddHandler("DailyBonus", DailyBonusHandler);
-        AddHandler("GameNotify", GameNotifyHandler);
-        AddHandler("Shop", ShopHandler);
+        AddHandler(ContentType.GamePlayProfile, GamePlayProfileHandler);
+        AddHandler(ContentType.WeeklyRank, WeeklyRankHandler);
+        AddHandler(ContentType.DailyBonus, DailyBonusHandler);
+        AddHandler(ContentType.GameNotify, GameNotifyHandler);
+        AddHandler(ContentType.Shop, ShopHandler);
     }
 
     private void RemoveHandlers()
     {
-        RemoveHandler("GamePlayProfile", GamePlayProfileHandler);
-        RemoveHandler("WeeklyRank", WeeklyRankHandler);
-        RemoveHandler("DailyBonus", DailyBonusHandler);
-        RemoveHandler("GameNotify", GameNotifyHandler);
-        RemoveHandler("Shop", ShopHandler);
+        RemoveHandler(ContentType.GamePlayProfile, GamePlayProfileHandler);
+        RemoveHandler(ContentType.WeeklyRank, WeeklyRankHandler);
+        RemoveHandler(ContentType.DailyBonus, DailyBonusHandler);
+        RemoveHandler(ContentType.GameNotify, GameNotifyHandler);
+        RemoveHandler(ContentType.Shop, ShopHandler);
     }
 
-    private int ContainsHandler(string packetId, Action<PacketInfo> handler)
+    public void AddHandler(ContentType contentType, Action<PacketInfo> handler)
     {
-        return packetHandlers.FindIndex(c => c.id == packetId && c.handler == handler);
-    }
-
-    public void AddHandler(string packetId, Action<PacketInfo> handler)
-    {
-        int index = ContainHandler(packetId, handler);
-        if (index >= 0)
+        if (packetHandlers.ContainsKey(contentType))
         {
-            Debug.LogWarn($"{packetId} | {handler} already exists.");
+            Debug.LogWarn($"{contentType} already exists.");
             return;
         }
 
-        PacketContent content = new PacketContent(packetId, handler);
-        if (locked)
+        PacketHandler content = new PacketHandler(handler);
+        packetHandlers[contentType].handler();
+    }
+
+    public void RemoveHandler(ContentType contentType)
+    {
+        if (packetHandlers.ContainsKey(contentType))
         {
-            waitHandler.Add(content);
+            packetHandlers.Remove(contentType);
         }
         else
         {
-            packetHandlers.Add(content);
-        }
-    }
-
-    private void CheckHandler()
-    {
-        if (removeHandler.Count > 0)
-        {
-            foreach (var h in removeHandler)
-            {
-                packetHandlers.Remove(h);
-            }
-
-            removeHandler.Clear();
-        }
-
-        if (waitHandler.Count > 0)
-        {
-            foreach (var h in waitHandler)
-            {
-                packetHandlers.Add(h);
-            }
-
-            waitHandler.Clear();
-        }
-    }
-
-    public void RemoveHandler(string packetId, Action<PacketInfo> handler)
-    {
-        int index = ContainHandler(packetId, handler);
-
-        if (index >= 0)
-        {
-            if (locked)
-            {
-                ServerContent content = new ServerContent(packetId, handler);
-                removeHandler.Add(content);
-            }
-            else
-            {
-                packetHandlers.RemoveAt(index);
-            }
-        }
-        else
-        {
-            Debug.LogWarn("Cannot find Handler : " + packetId + "|" + handler);
+            Debug.LogWarn("Cannot find handler : " + contentType);
         }
     }
 
     public void HandlePacketContents(ServerPacketToC msg)
     {
-        locked = true;
         foreach (var info in msg.Infos)
         {
-            foreach (var h in packetHandlers)
+            if(packetHandlers.ContainsKey(info.contentType))
             {
-                if (h.id == info.Id)
-                {
-                    h.handler(info);
-                }
+                packetHandlers[info.contentType].handler(info);
             }
         }
-        locked = false;
-
-        CheckHandler();
     }
 
     #region Event Handler
